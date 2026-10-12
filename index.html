@@ -460,6 +460,30 @@
       line-height: 1;
       letter-spacing: -.06em;
     }
+    .result-score .score-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .result-score .score-total {
+      color: var(--muted);
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+    .personal-best {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .personal-best strong {
+      color: var(--purple-dark);
+      font-size: 18px;
+    }
     .result-copy { max-width: 340px; margin: 0 auto 24px; color: var(--muted); }
     .result .primary { min-width: 155px; }
 
@@ -568,9 +592,23 @@
     ];
 
     const quiz = document.querySelector("#quiz");
+    const personalBestKey = "orbitMissionPersonalBest";
     let current = 0;
     let score = 0;
+    let personalBest = 0;
     let answered = false;
+
+    try {
+      const storedPersonalBest = window.localStorage.getItem(personalBestKey);
+      if (storedPersonalBest !== null) {
+        const parsedPersonalBest = Number(storedPersonalBest);
+        if (Number.isInteger(parsedPersonalBest) && parsedPersonalBest >= 0 && parsedPersonalBest <= questions.length) {
+          personalBest = parsedPersonalBest;
+        }
+      }
+    } catch (error) {
+      console.warn("Unable to read the personal best from browser storage.", error);
+    }
 
     quiz.addEventListener("keydown", event => {
       if (event.key === "Enter" && answered && quiz.querySelector("#next")) {
@@ -664,6 +702,14 @@
     function renderResults() {
       const ratio = score / questions.length;
       const highScore = score >= 8;
+      if (score > personalBest) {
+        personalBest = score;
+        try {
+          window.localStorage.setItem(personalBestKey, String(personalBest));
+        } catch (error) {
+          console.warn("Unable to save the personal best to browser storage.", error);
+        }
+      }
       quiz.classList.toggle("high-score", highScore);
       const result = ratio === 1
         ? { emoji: "🚀", title: "Out of this world!", copy: "A perfect mission. You really know your way around the cosmos." }
@@ -682,7 +728,8 @@
           ${highScore ? '<p class="rank-chip">Mission rank · Ace</p>' : ""}
           <p class="eyebrow">Mission complete · Debrief</p>
           <h1 tabindex="-1">${result.title}</h1>
-          <p class="result-score">${score}<span style="font-size:22px;color:var(--muted);font-weight:650"> / ${questions.length}</span></p>
+          <p class="result-score"><span class="score-label">Current score</span><span>${score}<span class="score-total"> / ${questions.length}</span></span></p>
+          <p class="personal-best">Personal best: <strong>${personalBest}</strong> / ${questions.length}</p>
           <p class="result-copy">${result.copy}</p>
           <button class="primary" id="restart" type="button">Play again <span aria-hidden="true">↻</span></button>
         </div>
